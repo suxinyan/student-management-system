@@ -1,0 +1,200 @@
+#include "stu_student.h"
+#include <stu_data.h>
+/*!***************************************************
+* @file: stu_achieve.cpp
+* @brief: for testing
+* @author:  PPsu
+* @date: 2018, 4, 22
+* @note:the specific function of the student class.
+*****************************************************/
+/*4、实现选修课的选课功能，仅学生可用。
+a)学生可查看所有可选的选修课，并从中选择自己的选修课；
+b)学生可放弃某门已选的选修课，但成绩已提交后不可弃选。
+c)必修课的选课学生为预先设置，不能选择。*/
+
+void stu_student::change_stu_college(string new_co)
+{
+	stu_college = new_co;
+}        //改变学院
+
+void stu_student::change_stu_class(string new_cl)
+{
+	stu_class = new_cl;
+}         //改变班级
+
+string stu_student::get_name()
+{
+	return stu_name;
+}             //得到学生姓名
+
+string stu_student::get_num()
+{
+	return stu_number;
+}                          //得到学生学号
+
+void stu_student::show_my_course()
+{
+	cout << "*my classes: " << endl;
+	for (int i = 0; i < MAX_SIZE; i++)
+		if (my_course[i])                      //数组值不为-1
+			cout << all_class[i] << "  " << endl;
+	 cout << endl;
+}
+             //展示学生课程
+
+void stu_student::show_my_inf()
+{
+	cout << "*name: \t\t" << stu_name << "\t" << endl;;
+	cout << "*sex:    \t" << stu_sex << "\t" << endl;
+	cout << "*number:  \t" << stu_number << "\t" << endl;
+	cout << "*college:  \t " << stu_college << "\t" << endl;
+	cout << "*class:  \t" << stu_class << "\t" << endl;
+	cout << endl;
+}//展示学生信息
+
+void stu_student::select_course( vector<selective_course*> &SCourse)     //选课
+{
+	cout << "current selective classes: " << endl;
+	if (!SCourse.empty())                          //选修课列表不为空
+	{
+		string x;
+		int i;
+		cout << "All selective classes:" << endl;
+		cout << "number\t\tname \t\tcredit\trest:" << endl;
+		show_class(SCourse);                                                                        //展示当前选修课及剩余量
+		vector<selective_course*>::iterator it = SCourse.begin();
+		cout << "Please input the class that you want to choose（ID or name）:";
+		cin >> x;
+		try {
+			if (choose_class(x, stu_name, SCourse, i) == OK)                           //选课， i为当前存储的课变量代号，为1证明选课成功
+				my_course[i] = OK;
+		}
+		catch (ExceptionClass& e)
+		{
+			e.mythrow();
+		}
+	}
+	else
+		cout << "empty! There is  no selective classes for you to choose." << endl;           //选修课列表为空证明选课失败
+}
+
+void stu_student:: show_GDP_grade(const vector<selective_course*> &SCourse, const vector<compul_course*> &CCourse)
+{
+	string x;                                                                //查看课程GDP和分数
+	int choice; 
+	int flag1 ,flag2= 0;           //判空标识
+	char y;                               
+	cout << "Please input the class that you want to see the GDP(x== q to end):";
+	cin >> x;                            //选项
+	while (x.compare("q") != 0)
+	{
+		flag2 = 0;
+		for (choice = 0; choice < MAX_SIZE; choice++)
+		{
+			if (all_class[choice].compare(x) == 0)                         //判断是否在学生当前已有课程范围内
+			{
+				flag2 = 1;
+				cout << " You choose course: " << all_class[choice] << ", right ( Y/N)?";      //确认是否选择该课
+				cin >> y;
+				if (y == 'Y')
+				{
+					if (choice >= 3)                                //查看选修课成绩
+					{
+						flag1 = 0;
+						vector<selective_course*>::const_iterator it;
+						for (it = SCourse.begin(); it != SCourse.end(); it++) //遍历课程
+						{
+							if ((*it)->co_number.compare(x) == 0 || (*it)->co_name.compare(x) == 0)//课程号或者课程名称匹配
+							{
+								double g = (*it)->calcu_GDP(stu_name);                        //得到课程GDP
+								if (g != FAL)
+									cout << "The GDP and grade of" << x << "is  " << g <<"  and   "<< (*it)->get_grade(stu_name)<< endl;
+								flag1 = 1;                              //课程找到
+							}
+						}
+						if (flag1 ==0 )                                                //课程未找到
+						{
+							cout << "There is no such class now!" << endl;
+						}
+					}
+					else
+					{
+						flag1 = 0;
+						vector<compul_course*>::const_iterator it;                                               //必修课查看
+						for (it = CCourse.begin(); it != CCourse.end(); it++)
+						{
+							if ((*it)->co_number.compare(x) == 0 || (*it)->co_name.compare(x) == 0)
+							{
+								double g = (*it)->calcu_GDP(stu_name);
+								if (g != FAL)
+									cout << "The GDP and grade of" << x << "is" << g << "and " <<(*it)->get_grade(stu_name) << endl;
+								flag1 = 1;
+							}
+						}
+						if (flag1 ==0)
+							cout << "There is no such class now!" << endl;
+					}
+				}
+				else
+					cout << "failed to see the GDP of the course!" << endl;
+				flag2 = 1;
+			}
+		}
+		if (flag2 ==0 )                                                                                          //根本没这门课
+			cout << "You don't have this class!" << endl;
+		cout<< "Please input the class that you want to see the GDP(x== q to end):";      //不结束就继续输入
+		cin >> x;
+	}
+}
+
+void stu_student::Delete_my_course(vector<selective_course*> &SCourse)
+{                                                                                                                 //删除课程
+	cout << "current my selective classes: " << endl;
+	for (int i = 3; i < MAX_SIZE; i++)
+	{
+		if (my_course[i])
+			cout << all_class[i] << endl;
+	}
+	if (!SCourse.empty())                          //选修课列表不为空
+	{
+		string x;
+		char choice;
+		cout << "Please input the class that you want to delete（ name）:";
+		cin >> x;
+		stu_course *ptr = find_select(SCourse, x);
+		if (ptr != NULL)                                                //找到这门课
+		{
+			cout << "Insure to delete it?(Y/N)?";
+			cin >> choice;
+			if (choice == 'Y')                  //希望删除
+			{
+				map<string, double>::iterator it = ptr->personnel.find(stu_name);     
+				if (it == ptr->personnel.end())
+					cout << "You are not in the class.\n";                       //找到你
+				else if (it->second != -1)                           //不能删除
+					cout << "There has been grade, you can't delete it!" << endl;
+				else
+				{
+					it = ptr->personnel.erase(it);              //删除
+					cout << "DELETE successfully!" << endl;
+				}
+			}
+		}
+		else
+			cout << "NO SUCH CLASS!" << endl;
+	}
+	else
+		cout << "empty! There is  no selective classes for you to choose." << endl;           //选修课列表为空证明选课失败
+}
+
+void stu_student::change_state(string name, double grade)
+{
+	int choice; 
+	for (choice = 0; choice < MAX_SIZE; choice++)
+	{
+		if (all_class[choice].compare(name) == 0)                         //判断是否在学生当前已有课程范围内
+		{
+			my_state[choice] = grade;
+		}
+	}
+}
